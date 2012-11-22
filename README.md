@@ -15,15 +15,20 @@ ant all
 
 * Rodar em core/package/liquibase-[SUA VERSÂO]/ 
 
+```shell
 	mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
 	                     -DgroupId=org.liquibase \
 	                     -DartifactId=liquibase-core \
 	                     -Dversion=[SUA VERSÃO].touch \
 	                     -Dpackaging=jar \
 	                     -DgeneratePom=true
+```
+
 * Rodar em maven 
 
+```shell
 	mvn clean install
+```
 
 * Faça os testes necessários;
 * Commit;
