@@ -9,25 +9,19 @@ http://ant.apache.org/bindownload.cgi
 * Alterar a versão do "build.properties" no core/src (IMPORTANTE: não colocar ".touch" na versão);
 * Rodar em core/src 
 
-```shell
-ant all
-```
+	ant all
 
 * Rodar em core/package/liquibase-[SUA VERSÂO]/ 
 
-```shell
 	mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
-                         -DgroupId=org.liquibase \
-                         -DartifactId=liquibase-core \
-                         -Dversion=[SUA VERSÃO].touch \
-                         -Dpackaging=jar \
-                         -DgeneratePom=true
-```
+	                     -DgroupId=org.liquibase \
+	                     -DartifactId=liquibase-core \
+	                     -Dversion=[SUA VERSÃO].touch \
+	                     -Dpackaging=jar \
+	                     -DgeneratePom=true
 * Rodar em maven 
 
-```shell
-mvn clean install
-```
+	mvn clean install
 
 * Faça os testes necessários;
 * Commit;
