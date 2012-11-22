@@ -27,7 +27,7 @@ mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
 * Rodar em maven 
 
 ```shell
-	mvn clean install
+mvn clean install
 ```
 
 * Faça os testes necessários;
