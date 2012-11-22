@@ -16,7 +16,7 @@ ant all
 * Rodar em core/package/liquibase-[SUA VERSÂO]/ 
 
 ```shell
-	mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
+mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
 	                     -DgroupId=org.liquibase \
 	                     -DartifactId=liquibase-core \
 	                     -Dversion=[SUA VERSÃO].touch \
