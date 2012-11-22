@@ -3,7 +3,7 @@
 
   <groupId>org.liquibase</groupId>
   <artifactId>liquibase-plugin</artifactId>
-  <version>@MAVEN.BUILD.VERSION@</version>
+  <version>@BUILD.VERSION@.touch</version>
 
   <packaging>maven-plugin</packaging>
 
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>org.liquibase</groupId>
       <artifactId>liquibase-core</artifactId>
-      <version>@BUILD.VERSION@</version>
+      <version>@BUILD.VERSION@.touch</version>
     </dependency>
 
     <dependency>

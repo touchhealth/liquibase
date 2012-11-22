@@ -10,6 +10,7 @@ import liquibase.database.sql.SqlStatement;
 import liquibase.database.sql.CallableSqlStatement;
 import liquibase.database.sql.visitor.SqlVisitor;
 import liquibase.exception.JDBCException;
+import liquibase.database.sql.RawSqlStatement;
 import liquibase.util.StreamUtil;
 
 public class JdbcOutputTemplate extends JdbcTemplate {
@@ -88,12 +89,13 @@ public class JdbcOutputTemplate extends JdbcTemplate {
             if (database instanceof MSSQLDatabase) {
                 output.write(StreamUtil.getLineSeparator());
                 output.write("GO");
-//            } else if (database instanceof OracleDatabase) {
-//                output.write(StreamUtil.getLineSeparator());
-//                output.write("/");
             } else {
-                if (!statement.endsWith(";")) {
-                    output.write(";");
+                String endDelimiter = ";";
+                if (sql instanceof RawSqlStatement) { 
+                    endDelimiter = ((RawSqlStatement) sql).getEndDelimiter(database);
+                }
+                if (!statement.endsWith(endDelimiter)) {
+                    output.write(endDelimiter);
                 }
             }
             output.write(StreamUtil.getLineSeparator());

@@ -73,7 +73,7 @@ public class JdbcTemplate {
         class ExecuteStatementCallback implements StatementCallback {
             public Object doInStatement(Statement stmt) throws SQLException, JDBCException {
                 String statement = applyVisitors(sql, sqlVisitors);
-
+                LogFactory.getLogger().info("liquibase-sql> "+statement);
 
                 stmt.execute(statement);
                 return null;

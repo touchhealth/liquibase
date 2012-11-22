@@ -115,10 +115,11 @@ public class ValidatingVisitor implements ChangeSetVisitor {
     }
 
     public boolean validationPassed() {
+        // Removemos a clause que verifica se existem changesets duplicados:
+        // && duplicateChangeSets.size() == 0
         return invalidMD5Sums.size() == 0
                 && failedPreconditions.size() == 0
                 && errorPreconditions.size() == 0
-                && duplicateChangeSets.size() == 0
                 && changeValidationExceptions.size() == 0
                 && setupExceptions.size() == 0;
     }

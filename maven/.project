@@ -3,6 +3,7 @@
 	<name>maven</name>
 	<comment></comment>
 	<projects>
+		<project>liquibase-migrator</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

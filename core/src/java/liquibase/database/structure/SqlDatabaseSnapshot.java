@@ -1,4 +1,19 @@
+
 package liquibase.database.structure;
+
+
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import liquibase.database.AbstractDatabase;
 import liquibase.database.Database;
@@ -9,13 +24,6 @@ import liquibase.exception.JDBCException;
 import liquibase.log.LogFactory;
 import liquibase.util.StringUtils;
 
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.ParseException;
-import java.util.*;
-import java.util.logging.Logger;
 
 public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
 
@@ -31,7 +39,6 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     protected Set<PrimaryKey> primaryKeys = new HashSet<PrimaryKey>();
     protected Set<Sequence> sequences = new HashSet<Sequence>();
 
-
     protected Map<String, Table> tablesMap = new HashMap<String, Table>();
     protected Map<String, View> viewsMap = new HashMap<String, View>();
     protected Map<String, Column> columnsMap = new HashMap<String, Column>();
@@ -42,7 +49,6 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     private String schema;
 
     private boolean hasDatabaseChangeLogTable = false;
-
 
     /**
      * Creates an empty database snapshot
@@ -74,7 +80,8 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     /**
      * Creates a snapshot of the given database.
      */
-    public SqlDatabaseSnapshot(Database database, Set<DiffStatusListener> statusListeners, String requestedSchema) throws JDBCException {
+    public SqlDatabaseSnapshot(Database database, Set<DiffStatusListener> statusListeners, String requestedSchema)
+            throws JDBCException {
         if (requestedSchema == null) {
             requestedSchema = database.getDefaultSchemaName();
         }
@@ -100,24 +107,24 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
             log.finest("Reading sequences ....");
             readSequences(requestedSchema);
 
-            this.tables = new HashSet<Table>(tablesMap.values());
-            this.views = new HashSet<View>(viewsMap.values());
-            this.columns = new HashSet<Column>(columnsMap.values());
+            this.tables = new HashSet<Table>(this.tablesMap.values());
+            this.views = new HashSet<View>(this.viewsMap.values());
+            this.columns = new HashSet<Column>(this.columnsMap.values());
         } catch (SQLException e) {
             throw new JDBCException(e);
         }
     }
 
     public Database getDatabase() {
-        return database;
+        return this.database;
     }
 
     public Set<Table> getTables() {
-        return tables;
+        return this.tables;
     }
 
     public Set<View> getViews() {
-        return views;
+        return this.views;
     }
 
     public Column getColumn(Column column) {
@@ -130,11 +137,11 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
 
     public Column getColumn(String tableName, String columnName) {
         String tableAndColumn = tableName + "." + columnName;
-        Column returnColumn = columnsMap.get(tableAndColumn);
+        Column returnColumn = this.columnsMap.get(tableAndColumn);
         if (returnColumn == null) {
-            for (String key : columnsMap.keySet()) {
+            for (String key : this.columnsMap.keySet()) {
                 if (key.equalsIgnoreCase(tableAndColumn)) {
-                    return columnsMap.get(key);
+                    return this.columnsMap.get(key);
                 }
             }
         }
@@ -142,24 +149,23 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     public Set<Column> getColumns() {
-        return columns;
+        return this.columns;
     }
 
     public Set<ForeignKey> getForeignKeys() {
-        return foreignKeys;
+        return this.foreignKeys;
     }
 
     public Set<Index> getIndexes() {
-        return indexes;
+        return this.indexes;
     }
 
     public Set<PrimaryKey> getPrimaryKeys() {
-        return primaryKeys;
+        return this.primaryKeys;
     }
 
-
     public Set<Sequence> getSequences() {
-        return sequences;
+        return this.sequences;
     }
 
     public Set<UniqueConstraint> getUniqueConstraints() {
@@ -167,8 +173,11 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     protected void readTablesAndViews(String schema) throws SQLException, JDBCException {
-        updateListeners("Reading tables for " + database.toString() + " ...");
-        ResultSet rs = databaseMetaData.getTables(database.convertRequestedSchemaToCatalog(schema), database.convertRequestedSchemaToSchema(schema), null, new String[]{"TABLE", "VIEW", "ALIAS"});
+        updateListeners("Reading tables for " + this.database.toString() + " ...");
+        ResultSet rs =
+                this.databaseMetaData.getTables(this.database.convertRequestedSchemaToCatalog(schema),
+                        this.database.convertRequestedSchemaToSchema(schema), null, new String[] { "TABLE", "VIEW",
+                                "ALIAS" });
         while (rs.next()) {
             String type = rs.getString("TABLE_TYPE");
             String name = convertFromDatabaseName(rs.getString("TABLE_NAME"));
@@ -176,9 +185,10 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
             String catalogName = convertFromDatabaseName(rs.getString("TABLE_CAT"));
             String remarks = rs.getString("REMARKS");
 
-            if (database.isSystemTable(catalogName, schemaName, name) || database.isLiquibaseTable(name) || database.isSystemView(catalogName, schemaName, name)) {
-                if (name.equalsIgnoreCase(database.getDatabaseChangeLogTableName())) {
-                    hasDatabaseChangeLogTable = true;
+            if (this.database.isSystemTable(catalogName, schemaName, name) || this.database.isLiquibaseTable(name)
+                    || this.database.isSystemView(catalogName, schemaName, name)) {
+                if (name.equalsIgnoreCase(this.database.getDatabaseChangeLogTableName())) {
+                    this.hasDatabaseChangeLogTable = true;
                 }
                 continue;
             }
@@ -186,53 +196,55 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
             if ("TABLE".equals(type) || "ALIAS".equals(type)) {
                 Table table = new Table(name);
                 table.setRemarks(StringUtils.trimToNull(remarks));
-                table.setDatabase(database);
+                table.setDatabase(this.database);
                 table.setSchema(schemaName);
-                tablesMap.put(name, table);
+                this.tablesMap.put(name, table);
             } else if ("VIEW".equals(type)) {
                 View view = new View();
                 view.setName(name);
                 view.setSchema(schemaName);
                 try {
-                    view.setDefinition(database.getViewDefinition(schema, name));
+                    view.setDefinition(this.database.getViewDefinition(schema, name));
                 } catch (JDBCException e) {
-                    System.out.println("Error getting " + database.getConnectionURL() + " view with " + ((AbstractDatabase) database).getViewDefinitionSql(schema, name));
+                    System.out.println("Error getting " + this.database.getConnectionURL() + " view with "
+                            + ((AbstractDatabase) this.database).getViewDefinitionSql(schema, name));
                     throw e;
                 }
 
-                viewsMap.put(name, view);
+                this.viewsMap.put(name, view);
 
             }
         }
         rs.close();
 
         /* useful for troubleshooting table reading */
-//        if (tablesMap.size() == 0) {
-//            System.out.println("No tables found, all tables:");
-//
-//            String convertedCatalog = database.convertRequestedSchemaToCatalog(schema);
-//            String convertedSchema = database.convertRequestedSchemaToSchema(schema);
-//
-//            System.out.println("Tried: "+convertedCatalog+"."+convertedSchema);
-//            convertedCatalog = null;
-//            convertedSchema = null;
-//
-//            rs = databaseMetaData.getTables(convertedCatalog, convertedSchema, null, new String[]{"TABLE", "VIEW"});
-//            while (rs.next()) {
-//                String type = rs.getString("TABLE_TYPE");
-//                String name = rs.getString("TABLE_NAME");
-//                String schemaName = rs.getString("TABLE_SCHEM");
-//                String catalogName = rs.getString("TABLE_CAT");
-//
-//                if (database.isSystemTable(catalogName, schemaName, name) || database.isLiquibaseTable(name) || database.isSystemView(catalogName, schemaName, name)) {
-//                    continue;
-//                }
-//
-//                System.out.println(catalogName+"."+schemaName+"."+name+":"+type);
-//
-//            }
-//            rs.close();
-//        }
+        // if (tablesMap.size() == 0) {
+        // System.out.println("No tables found, all tables:");
+        //
+        // String convertedCatalog = database.convertRequestedSchemaToCatalog(schema);
+        // String convertedSchema = database.convertRequestedSchemaToSchema(schema);
+        //
+        // System.out.println("Tried: "+convertedCatalog+"."+convertedSchema);
+        // convertedCatalog = null;
+        // convertedSchema = null;
+        //
+        // rs = databaseMetaData.getTables(convertedCatalog, convertedSchema, null, new String[]{"TABLE", "VIEW"});
+        // while (rs.next()) {
+        // String type = rs.getString("TABLE_TYPE");
+        // String name = rs.getString("TABLE_NAME");
+        // String schemaName = rs.getString("TABLE_SCHEM");
+        // String catalogName = rs.getString("TABLE_CAT");
+        //
+        // if (database.isSystemTable(catalogName, schemaName, name) || database.isLiquibaseTable(name) ||
+        // database.isSystemView(catalogName, schemaName, name)) {
+        // continue;
+        // }
+        //
+        // System.out.println(catalogName+"."+schemaName+"."+name+":"+type);
+        //
+        // }
+        // rs.close();
+        // }
     }
 
     protected String convertFromDatabaseName(String objectName) {
@@ -243,10 +255,12 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     protected void readColumns(String schema) throws SQLException, JDBCException {
-        updateListeners("Reading columns for " + database.toString() + " ...");
+        updateListeners("Reading columns for " + this.database.toString() + " ...");
 
-        Statement selectStatement = database.getConnection().createStatement();
-        ResultSet rs = databaseMetaData.getColumns(database.convertRequestedSchemaToCatalog(schema), database.convertRequestedSchemaToSchema(schema), null, null);
+        Statement selectStatement = this.database.getConnection().createStatement();
+        ResultSet rs =
+                this.databaseMetaData.getColumns(this.database.convertRequestedSchemaToCatalog(schema),
+                        this.database.convertRequestedSchemaToSchema(schema), null, null);
         while (rs.next()) {
             Column columnInfo = new Column();
 
@@ -256,24 +270,26 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
             String catalogName = convertFromDatabaseName(rs.getString("TABLE_CAT"));
             String remarks = rs.getString("REMARKS");
 
-            if (database.isSystemTable(catalogName, schemaName, tableName) || database.isLiquibaseTable(tableName)) {
+            if (this.database.isSystemTable(catalogName, schemaName, tableName)
+                    || this.database.isLiquibaseTable(tableName)) {
                 continue;
             }
 
-            Table table = tablesMap.get(tableName);
+            Table table = this.tablesMap.get(tableName);
             if (table == null) {
-                View view = viewsMap.get(tableName);
+                View view = this.viewsMap.get(tableName);
                 if (view == null) {
-                    log.info("Could not find table or view " + tableName + " for column " + columnName);
+                    // log.info("Could not find table or view " + tableName + " for column " + columnName);
+                    // Not a table or view column. It's probably an index or primary key column, so ignore it.
                     continue;
                 } else {
                     columnInfo.setView(view);
-	            columnInfo.setAutoIncrement(false);
+                    columnInfo.setAutoIncrement(false);
                     view.getColumns().add(columnInfo);
                 }
             } else {
                 columnInfo.setTable(table);
-                columnInfo.setAutoIncrement(database.isColumnAutoIncrement(schema, tableName, columnName));
+                columnInfo.setAutoIncrement(this.database.isColumnAutoIncrement(schema, tableName, columnName));
                 table.getColumns().add(columnInfo);
             }
 
@@ -291,9 +307,9 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
 
             columnInfo.setPrimaryKey(isPrimaryKey(columnInfo));
 
-            getColumnTypeAndDefValue(columnInfo, rs, database);
+            getColumnTypeAndDefValue(columnInfo, rs, this.database);
             columnInfo.setRemarks(remarks);
-            columnsMap.put(tableName + "." + columnName, columnInfo);
+            this.columnsMap.put(tableName + "." + columnName, columnInfo);
         }
         rs.close();
         selectStatement.close();
@@ -302,20 +318,22 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     /**
      * Method assigns correct column type and default value to Column object.
      * <p/>
-     * This method should be database engine specific. JDBC implementation requires
-     * database engine vendors to convert native DB types to java objects.
-     * During conversion some metadata information are being lost or reported incorrectly via DatabaseMetaData objects.
-     * This method, if necessary, must be overriden. It must go below DatabaseMetaData implementation and talk directly to database to get correct metadata information.
-     *
+     * This method should be database engine specific. JDBC implementation requires database engine vendors to convert
+     * native DB types to java objects. During conversion some metadata information are being lost or reported
+     * incorrectly via DatabaseMetaData objects. This method, if necessary, must be overriden. It must go below
+     * DatabaseMetaData implementation and talk directly to database to get correct metadata information.
+     * 
      * @param rs
      * @return void
      * @throws SQLException
      * @author Daniel Bargiel <danielbargiel@googlemail.com>
      */
-    protected void getColumnTypeAndDefValue(Column columnInfo, ResultSet rs, Database database) throws SQLException, JDBCException {
+    protected void getColumnTypeAndDefValue(Column columnInfo, ResultSet rs, Database database)
+            throws SQLException, JDBCException {
         Object defaultValue = rs.getObject("COLUMN_DEF");
         try {
-            columnInfo.setDefaultValue(database.convertDatabaseValueToJavaObject(defaultValue, columnInfo.getDataType(), columnInfo.getColumnSize(), columnInfo.getDecimalDigits()));
+            columnInfo.setDefaultValue(database.convertDatabaseValueToJavaObject(defaultValue,
+                    columnInfo.getDataType(), columnInfo.getColumnSize(), columnInfo.getDecimalDigits()));
         } catch (ParseException e) {
             throw new JDBCException(e);
         }
@@ -339,33 +357,37 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     protected void readForeignKeyInformation(String schema) throws JDBCException, SQLException {
-        updateListeners("Reading foreign keys for " + database.toString() + " ...");
+        updateListeners("Reading foreign keys for " + this.database.toString() + " ...");
 
-        for (Table table : tablesMap.values()) {
-            String dbCatalog = database.convertRequestedSchemaToCatalog(schema);
-            String dbSchema = database.convertRequestedSchemaToSchema(schema);
-            ResultSet rs = databaseMetaData.getExportedKeys(dbCatalog, dbSchema, table.getName());
+        for (Table table : this.tablesMap.values()) {
+            String dbCatalog = this.database.convertRequestedSchemaToCatalog(schema);
+            String dbSchema = this.database.convertRequestedSchemaToSchema(schema);
+            ResultSet rs = this.databaseMetaData.getExportedKeys(dbCatalog, dbSchema, table.getName());
             ForeignKey fkInfo = null;
             while (rs.next()) {
                 String fkName = convertFromDatabaseName(rs.getString("FK_NAME"));
 
                 String pkTableName = convertFromDatabaseName(rs.getString("PKTABLE_NAME"));
                 String pkColumn = convertFromDatabaseName(rs.getString("PKCOLUMN_NAME"));
-                Table pkTable = tablesMap.get(pkTableName);
+                Table pkTable = this.tablesMap.get(pkTableName);
                 if (pkTable == null) {
-                    //Ok, no idea what to do with this one . . . should always be there
-                    log.warning("Foreign key " + fkName + " references table " + pkTableName + ", which we cannot find.  Ignoring.");
+                    // Ok, no idea what to do with this one . . . should always be there
+                    log.warning("Foreign key " + fkName + " references table " + pkTableName
+                            + ", which we cannot find.  Ignoring.");
                     continue;
                 }
                 int keySeq = rs.getInt("KEY_SEQ");
-                //Simple (non-composite) keys have KEY_SEQ=1, so create the ForeignKey.
-                //In case of subsequent parts of composite keys (KEY_SEQ>1) don't create new instance, just reuse the one from previous call.
-                //According to #getExportedKeys() contract, the result set rows are properly sorted, so the reuse of previous FK instance is safe.
-        /*        if (keySeq == 1) {
-                    fkInfo = new ForeignKey();
-                } */
+                // Simple (non-composite) keys have KEY_SEQ=1, so create the ForeignKey.
+                // In case of subsequent parts of composite keys (KEY_SEQ>1) don't create new instance, just reuse the
+                // one from previous call.
+                // According to #getExportedKeys() contract, the result set rows are properly sorted, so the reuse of
+                // previous FK instance is safe.
+                // if (keySeq == 1) {
+                // fkInfo = new ForeignKey();
+                // }
 
-                if (fkInfo == null || ( (fkInfo != null) && (!fkInfo.getPrimaryKeyTable().getName().equals(pkTableName)))) {
+                if (fkInfo == null || keySeq == 1
+                        || ((fkInfo != null) && (!fkInfo.getPrimaryKeyTable().getName().equals(pkTableName)))) {
                     fkInfo = new ForeignKey();
                 }
 
@@ -375,12 +397,13 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                 String fkTableName = convertFromDatabaseName(rs.getString("FKTABLE_NAME"));
                 String fkSchema = convertFromDatabaseName(rs.getString("FKTABLE_SCHEM"));
                 String fkColumn = convertFromDatabaseName(rs.getString("FKCOLUMN_NAME"));
-                Table fkTable = tablesMap.get(fkTableName);
+                Table fkTable = this.tablesMap.get(fkTableName);
                 if (fkTable == null) {
                     fkTable = new Table(fkTableName);
-                    fkTable.setDatabase(database);
+                    fkTable.setDatabase(this.database);
                     fkTable.setSchema(fkSchema);
-                    log.warning("Foreign key " + fkName + " is in table " + fkTableName + ", which is in a different schema.  Retaining FK in diff, but table will not be diffed.");
+                    log.warning("Foreign key " + fkName + " is in table " + fkTableName
+                            + ", which is in a different schema.  Retaining FK in diff, but table will not be diffed.");
                 }
                 fkInfo.setForeignKeyTable(fkTable);
                 fkInfo.addForeignKeyColumn(fkColumn);
@@ -389,8 +412,9 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
 
                 Integer updateRule, deleteRule;
                 updateRule = rs.getInt("UPDATE_RULE");
-                if (rs.wasNull())
+                if (rs.wasNull()) {
                     updateRule = null;
+                }
                 deleteRule = rs.getInt("DELETE_RULE");
                 if (rs.wasNull()) {
                     deleteRule = null;
@@ -398,7 +422,7 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                 fkInfo.setUpdateRule(updateRule);
                 fkInfo.setDeleteRule(deleteRule);
 
-                if (database.supportsInitiallyDeferrableColumns()) {
+                if (this.database.supportsInitiallyDeferrableColumns()) {
                     short deferrablility = rs.getShort("DEFERRABILITY");
                     if (deferrablility == DatabaseMetaData.importedKeyInitiallyDeferred) {
                         fkInfo.setDeferrable(Boolean.TRUE);
@@ -412,9 +436,10 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                     }
                 }
 
-                //Add only if the key was created in this iteration (updating the instance values changes hashCode so it cannot be re-inserted into set)
+                // Add only if the key was created in this iteration (updating the instance values changes hashCode so
+                // it cannot be re-inserted into set)
                 if (keySeq == 1) {
-                    foreignKeys.add(fkInfo);
+                    this.foreignKeys.add(fkInfo);
                 }
             }
 
@@ -423,29 +448,36 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     protected void readIndexes(String schema) throws JDBCException, SQLException {
-        updateListeners("Reading indexes for " + database.toString() + " ...");
+        updateListeners("Reading indexes for " + this.database.toString() + " ...");
 
-        for (Table table : tablesMap.values()) {
+        for (Table table : this.tablesMap.values()) {
             ResultSet rs;
             Statement statement = null;
-            if (database instanceof OracleDatabase) {
-                //oracle getIndexInfo is buggy and slow.  See Issue 1824548 and http://forums.oracle.com/forums/thread.jspa?messageID=578383&#578383
-                statement = database.getConnection().createStatement();
-                String sql = "SELECT INDEX_NAME, 3 AS TYPE, TABLE_NAME, COLUMN_NAME, COLUMN_POSITION AS ORDINAL_POSITION, null AS FILTER_CONDITION FROM ALL_IND_COLUMNS WHERE TABLE_OWNER='" + database.convertRequestedSchemaToSchema(schema) + "' AND TABLE_NAME='" + table.getName() + "' ORDER BY INDEX_NAME, ORDINAL_POSITION";
+            if (this.database instanceof OracleDatabase) {
+                // oracle getIndexInfo is buggy and slow. See Issue 1824548 and
+                // http://forums.oracle.com/forums/thread.jspa?messageID=578383&#578383
+                statement = this.database.getConnection().createStatement();
+                String sql =
+                        "SELECT INDEX_NAME, 3 AS TYPE, TABLE_NAME, COLUMN_NAME, COLUMN_POSITION AS ORDINAL_POSITION, null AS FILTER_CONDITION FROM ALL_IND_COLUMNS WHERE TABLE_OWNER='"
+                                + this.database.convertRequestedSchemaToSchema(schema)
+                                + "' AND TABLE_NAME='"
+                                + table.getName() + "' ORDER BY INDEX_NAME, ORDINAL_POSITION";
                 rs = statement.executeQuery(sql);
             } else {
-                rs = databaseMetaData.getIndexInfo(database.convertRequestedSchemaToCatalog(schema), database.convertRequestedSchemaToSchema(schema), table.getName(), false, true);
+                rs =
+                        this.databaseMetaData.getIndexInfo(this.database.convertRequestedSchemaToCatalog(schema),
+                                this.database.convertRequestedSchemaToSchema(schema), table.getName(), false, true);
             }
             Map<String, Index> indexMap = new HashMap<String, Index>();
             while (rs.next()) {
                 String indexName = convertFromDatabaseName(rs.getString("INDEX_NAME"));
                 short type = rs.getShort("TYPE");
-//                String tableName = rs.getString("TABLE_NAME");
+                // String tableName = rs.getString("TABLE_NAME");
                 boolean nonUnique = true;
                 try {
                     nonUnique = rs.getBoolean("NON_UNIQUE");
                 } catch (SQLException e) {
-                    //doesn't exist in all databases
+                    // doesn't exist in all databases
                 }
                 String columnName = convertFromDatabaseName(rs.getString("COLUMN_NAME"));
                 short position = rs.getShort("ORDINAL_POSITION");
@@ -454,12 +486,12 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                 if (type == DatabaseMetaData.tableIndexStatistic) {
                     continue;
                 }
-//                if (type == DatabaseMetaData.tableIndexOther) {
-//                    continue;
-//                }
+                // if (type == DatabaseMetaData.tableIndexOther) {
+                // continue;
+                // }
 
                 if (columnName == null) {
-                    //nothing to index, not sure why these come through sometimes
+                    // nothing to index, not sure why these come through sometimes
                     continue;
                 }
                 Index indexInformation;
@@ -477,10 +509,10 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                 for (int i = indexInformation.getColumns().size(); i < position; i++) {
                     indexInformation.getColumns().add(null);
                 }
-                indexInformation.getColumns().set(position-1, columnName);
+                indexInformation.getColumns().set(position - 1, columnName);
             }
             for (Map.Entry<String, Index> entry : indexMap.entrySet()) {
-                indexes.add(entry.getValue());
+                this.indexes.add(entry.getValue());
             }
             rs.close();
             if (statement != null) {
@@ -489,36 +521,42 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
         }
 
         Set<Index> indexesToRemove = new HashSet<Index>();
-        //remove PK indexes
-        for (Index index : indexes) {
-            for (PrimaryKey pk : primaryKeys) {
-                if (index.getTable().getName().equalsIgnoreCase(pk.getTable().getName()) && index.getColumnNames().equals(pk.getColumnNames())) {
+        // remove PK indexes
+        for (Index index : this.indexes) {
+            for (PrimaryKey pk : this.primaryKeys) {
+                if (index.getTable().getName().equalsIgnoreCase(pk.getTable().getName())
+                        && index.getColumnNames().equals(pk.getColumnNames())) {
                     indexesToRemove.add(index);
                 }
             }
-            for (ForeignKey fk : foreignKeys) {
-                if (index.getTable().getName().equalsIgnoreCase(fk.getForeignKeyTable().getName()) && index.getColumnNames().equals(fk.getForeignKeyColumns())) {
+            for (ForeignKey fk : this.foreignKeys) {
+                if (index.getTable().getName().equalsIgnoreCase(fk.getForeignKeyTable().getName())
+                        && index.getColumnNames().equals(fk.getForeignKeyColumns())) {
                     indexesToRemove.add(index);
                 }
             }
-            for (UniqueConstraint uc : uniqueConstraints) {
-                if (index.getTable().getName().equalsIgnoreCase(uc.getTable().getName()) && index.getColumnNames().equals(uc.getColumnNames())) {
+            for (UniqueConstraint uc : this.uniqueConstraints) {
+                if (index.getTable().getName().equalsIgnoreCase(uc.getTable().getName())
+                        && index.getColumnNames().equals(uc.getColumnNames())) {
                     indexesToRemove.add(index);
                 }
             }
 
         }
-        indexes.removeAll(indexesToRemove);
+        this.indexes.removeAll(indexesToRemove);
     }
 
     protected void readPrimaryKeys(String schema) throws JDBCException, SQLException {
-        updateListeners("Reading primary keys for " + database.toString() + " ...");
+        updateListeners("Reading primary keys for " + this.database.toString() + " ...");
 
-        //we can't add directly to the this.primaryKeys hashSet because adding columns to an exising PK changes the hashCode and .contains() fails
+        // we can't add directly to the this.primaryKeys hashSet because adding columns to an exising PK changes the
+        // hashCode and .contains() fails
         List<PrimaryKey> foundPKs = new ArrayList<PrimaryKey>();
 
-        for (Table table : tablesMap.values()) {
-            ResultSet rs = databaseMetaData.getPrimaryKeys(database.convertRequestedSchemaToCatalog(schema), database.convertRequestedSchemaToSchema(schema), table.getName());
+        for (Table table : this.tablesMap.values()) {
+            ResultSet rs =
+                    this.databaseMetaData.getPrimaryKeys(this.database.convertRequestedSchemaToCatalog(schema),
+                            this.database.convertRequestedSchemaToSchema(schema), table.getName());
 
             while (rs.next()) {
                 String tableName = convertFromDatabaseName(rs.getString("TABLE_NAME"));
@@ -555,32 +593,34 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     protected void readUniqueConstraints(String schema) throws JDBCException, SQLException {
-        updateListeners("Reading unique constraints for " + database.toString() + " ...");
+        updateListeners("Reading unique constraints for " + this.database.toString() + " ...");
     }
 
-//    private void readUniqueConstraints(String catalog, String schema) throws JDBCException, SQLException {
-//        updateListeners("Reading unique constraints for " + database.toString() + " ...");
-//
-//        //noinspection unchecked
-//        List<String> sequenceNamess = (List<String>) new JdbcTemplate(database).queryForList(database.findUniqueConstraints(schema), String.class);
-//
-//        for (String sequenceName : sequenceNamess) {
-//            Sequence seq = new Sequence();
-//            seq.setName(sequenceName);
-//
-//            sequences.add(seq);
-//        }
-//    }
+    // private void readUniqueConstraints(String catalog, String schema) throws JDBCException, SQLException {
+    // updateListeners("Reading unique constraints for " + database.toString() + " ...");
+    //
+    // //noinspection unchecked
+    // List<String> sequenceNamess = (List<String>) new
+    // JdbcTemplate(database).queryForList(database.findUniqueConstraints(schema), String.class);
+    //
+    // for (String sequenceName : sequenceNamess) {
+    // Sequence seq = new Sequence();
+    // seq.setName(sequenceName);
+    //
+    // sequences.add(seq);
+    // }
+    // }
 
     protected void readSequences(String schema) throws JDBCException {
-        updateListeners("Reading sequences for " + database.toString() + " ...");
+        updateListeners("Reading sequences for " + this.database.toString() + " ...");
 
-        String convertedSchemaName = database.convertRequestedSchemaToSchema(schema);
+        String convertedSchemaName = this.database.convertRequestedSchemaToSchema(schema);
 
-        if (database.supportsSequences()) {
-            //noinspection unchecked
-            List<String> sequenceNames = (List<String>) database.getJdbcTemplate().queryForList(database.createFindSequencesSQL(schema), String.class, new ArrayList<SqlVisitor>());
-
+        if (this.database.supportsSequences()) {
+            // noinspection unchecked
+            List<String> sequenceNames =
+                    this.database.getJdbcTemplate().queryForList(this.database.createFindSequencesSQL(schema),
+                            String.class, new ArrayList<SqlVisitor>());
 
             if (sequenceNames != null) {
                 for (String sequenceName : sequenceNames) {
@@ -588,7 +628,7 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
                     seq.setName(sequenceName.trim());
                     seq.setSchema(convertedSchemaName);
 
-                    sequences.add(seq);
+                    this.sequences.add(seq);
                 }
             }
         }
@@ -677,10 +717,10 @@ public abstract class SqlDatabaseSnapshot implements DatabaseSnapshot {
     }
 
     public String getSchema() {
-        return schema;
+        return this.schema;
     }
 
     public boolean hasDatabaseChangeLogTable() {
-        return hasDatabaseChangeLogTable;
+        return this.hasDatabaseChangeLogTable;
     }
 }

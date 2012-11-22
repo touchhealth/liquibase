@@ -29,8 +29,13 @@ public class PostgresDatabase extends AbstractDatabase {
     private static final DataType CURRENCY_TYPE = new DataType("DECIMAL", true);
     private static final DataType UUID_TYPE = new DataType("CHAR(36)", false);
     private static final DataType CLOB_TYPE = new DataType("TEXT", true);
-    private static final DataType BLOB_TYPE = new DataType("BYTEA", false);
+    // private static final DataType BLOB_TYPE = new DataType("BYTEA", false);
+    /**
+	 * KASTEN BUG Oracle OID
+	 */
+    private static final DataType BLOB_TYPE = new DataType("oid", false);
     private static final DataType DATETIME_TYPE = new DataType("TIMESTAMP WITH TIME ZONE", false);
+    private static final DataType DOUBLE_TYPE = new DataType("DOUBLE PRECISION", true);
 
     public PostgresDatabase() {
 //        systemTablesAndViews.add("pg_logdir_ls");
@@ -134,6 +139,10 @@ public class PostgresDatabase extends AbstractDatabase {
         return DATETIME_TYPE;
     }
 
+    public DataType getDoubleType() {
+        return DOUBLE_TYPE;
+    }
+    
     public boolean supportsSequences() {
         return true;
     }
@@ -187,26 +196,6 @@ public class PostgresDatabase extends AbstractDatabase {
         return super.getDatabaseChangeLogLockTableName().toLowerCase();
     }
 
-//    public void dropDatabaseObjects(String schema) throws JDBCException {
-//        try {
-//            if (schema == null) {
-//                schema = getConnectionUsername();
-//            }
-//            new JdbcTemplate(this).execute(new RawSqlStatement("DROP OWNED BY " + schema));
-//
-//            getConnection().commit();
-//
-//            changeLogTableExists = false;
-//            changeLogLockTableExists = false;
-//            changeLogCreateAttempted = false;
-//            changeLogLockCreateAttempted = false;
-//
-//        } catch (SQLException e) {
-//            throw new JDBCException(e);
-//        }
-//    }
-
-
     public SqlStatement createFindSequencesSQL(String schema) throws JDBCException {
         return new RawSqlStatement("SELECT relname AS SEQUENCE_NAME FROM pg_class, pg_namespace " +
                 "WHERE relkind='S' " +
@@ -243,6 +232,9 @@ public class PostgresDatabase extends AbstractDatabase {
     public String getColumnType(String columnType, Boolean autoIncrement) {
         if (columnType.startsWith("java.sql.Types.VARCHAR")) { //returns "name" for type
             return columnType.replace("java.sql.Types.", "");
+        }
+        if (columnType.startsWith("java.sql.Types.BLOB")) { 
+        	columnType = columnType.replace("java.sql.Types.BLOB", "oid");
         }
 
         String type = super.getColumnType(columnType, autoIncrement);
@@ -322,7 +314,8 @@ public class PostgresDatabase extends AbstractDatabase {
         }
         if (hasCaseProblems(constraintName) || isReservedWord(constraintName)) {
             return "\"" + constraintName + "\"";
-        } else {
+        } 
+        else {
             return super.escapeConstraintName(constraintName);
         }
     }
@@ -343,7 +336,11 @@ public class PostgresDatabase extends AbstractDatabase {
     * If there are at least one characters with upper case while all other are in lower case (or vice versa) this string should be escaped.
     */
     private boolean hasCaseProblems(String tableName) {
-        return tableName.matches(".*[A-Z].*") && tableName.matches(".*[a-z].*");
+    	return false;
+    	/**
+    	 * KASTEN: Problemas de case com o VERIS
+    	 */
+    	//return tableName.matches(".*[A-Z].*") && tableName.matches(".*[a-z].*");
     }
 
     /*
