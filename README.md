@@ -35,4 +35,10 @@ mvn clean install
 * Fazer release NA MÃO dos jars do "core" e do "plugin" via nexus (upload):
 ** "core": preencher os GAV parameters de acordo com o pom;
 ** "plugin": via pom;
-* Passar tag no CVS.
+* Passar tag no GIT.
+
+```shell
+VERSAO=[SUA_VERSAO].touch #(ex: 1.9.5.8.touch)
+git tag -a $VERSAO -m "tag $VERSAO"
+git push --tags
+```
