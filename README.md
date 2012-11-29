@@ -16,10 +16,11 @@ ant all
 * Rodar em core/package/liquibase-[SUA VERSÂO]/ 
 
 ```shell
-mvn install:install-file -Dfile=liquibase-[SUA VERSÃO].jar \
+VERSAO=[SUA VERSAO] #(ex: 1.9.5.8)
+mvn install:install-file -Dfile=liquibase-$VERSAO.jar \
 	                     -DgroupId=org.liquibase \
 	                     -DartifactId=liquibase-core \
-	                     -Dversion=[SUA VERSÃO].touch \
+	                     -Dversion=$VERSAO.touch \
 	                     -Dpackaging=jar \
 	                     -DgeneratePom=true
 ```
@@ -32,7 +33,7 @@ mvn clean install
 
 * Faça os testes necessários;
 * Commit;
-* Fazer release NA MÃO dos jars do "core" e do "plugin" via nexus (upload):
+* Fazer release NA MÃO dos jars do "core" e do "plugin" via nexus (upload no repositório **Releases**):
 ** "core": preencher os GAV parameters de acordo com o pom;
 ** "plugin": via pom;
 * Passar tag no GIT.
