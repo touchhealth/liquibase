@@ -82,7 +82,9 @@ public class PostgresTypeConverter extends AbstractTypeConverter {
 
     @Override
     public BlobType getBlobType() {
-        return new BlobType("BYTEA");
+        // XXX Alterado pela Touch, para atender nossos quesitos
+        // return new BlobType("BYTEA");
+        return new BlobType("OID");
     }
 
     @Override
