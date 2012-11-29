@@ -57,21 +57,21 @@ public class PostgresDatabaseTest extends AbstractDatabaseTest {
     @Override
     @Test
     public void escapeTableName_noSchema() {
-        Database database = getDatabase();
-        assertEquals("\"tableName\"", database.escapeTableName(null, "tableName"));
+        Database database = this.getDatabase();
+        assertEquals("tableName", database.escapeTableName(null, "tableName"));
     }
 
     @Test
-     public void escapeTableName_reservedWord() {
-         Database database = getDatabase();
-         assertEquals("\"user\"", database.escapeTableName(null, "user"));
-     }
+    public void escapeTableName_reservedWord() {
+        Database database = this.getDatabase();
+        assertEquals("user", database.escapeTableName(null, "user"));
+    }
 
     @Override
     @Test
     public void escapeTableName_withSchema() {
-        Database database = getDatabase();
-        assertEquals("\"schemaName\".\"tableName\"", database.escapeTableName("schemaName", "tableName"));
+        Database database = this.getDatabase();
+        assertEquals("schemaName.tableName", database.escapeTableName("schemaName", "tableName"));
     }
 
 }

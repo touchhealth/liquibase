@@ -17,7 +17,7 @@ public class PostgresTypeConverterTest extends DefaultTypeConverterTest {
 
     @Test
     public void getBlobType() {
-        assertEquals("BYTEA", new PostgresTypeConverter().getBlobType().toString());
+        assertEquals("OID", new PostgresTypeConverter().getBlobType().toString());
     }
 
     @Test
@@ -81,21 +81,21 @@ public class PostgresTypeConverterTest extends DefaultTypeConverterTest {
     }
     @Test
     public void getColumnType_TinyBlob() {
-        assertEquals("BYTEA", new PostgresTypeConverter().getDataType("TINYBLOB", false).toString());
+        assertEquals("OID", new PostgresTypeConverter().getDataType("TINYBLOB", false).toString());
     }
 
     @Test
     public void getColumnType_Blob() {
-        assertEquals("BYTEA", new PostgresTypeConverter().getDataType("BLOB", false).toString());
+        assertEquals("OID", new PostgresTypeConverter().getDataType("BLOB", false).toString());
     }
 
     @Test
     public void getColumnType_MediumBlob() {
-        assertEquals("BYTEA", new PostgresTypeConverter().getDataType("MEDIUMBLOB", false).toString());
+        assertEquals("OID", new PostgresTypeConverter().getDataType("MEDIUMBLOB", false).toString());
     }
 
     @Test
     public void getColumnType_LongBlob() {
-        assertEquals("BYTEA", new PostgresTypeConverter().getDataType("LONGBLOB", false).toString());
+        assertEquals("OID", new PostgresTypeConverter().getDataType("LONGBLOB", false).toString());
     }
 }
