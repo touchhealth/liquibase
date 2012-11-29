@@ -274,8 +274,9 @@ public class PostgresDatabase extends AbstractDatabase {
     * Method is public so a subclass extension can override it to always return false.
     */
     protected boolean hasMixedCase(String tableName) {
-        return tableName.matches(".*[A-Z].*") && tableName.matches(".*[a-z].*");
-
+        // XXX Alterado pela Touch, para atender nossos quesitos
+        // return tableName.matches(".*[A-Z].*") && tableName.matches(".*[a-z].*");
+        return false;
     }
 
     /*
