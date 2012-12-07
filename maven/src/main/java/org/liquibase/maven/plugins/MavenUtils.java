@@ -41,7 +41,7 @@ public class MavenUtils {
     }
     Set<URL> urls = new HashSet<URL>();
 
-    Set dependencies = project.getDependencyArtifacts();
+    Set dependencies = project.getArtifacts();
     if (dependencies != null && !dependencies.isEmpty()) {
       for (Iterator it = dependencies.iterator(); it.hasNext();) {
         addArtifact(urls, (Artifact)it.next(), log, verbose);
