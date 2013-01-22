@@ -1,7 +1,15 @@
 package liquibase.lock;
 
+import java.net.InetAddress;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import liquibase.DatabaseChangeLogLock;
-import liquibase.util.NetUtil;
 import liquibase.database.Database;
 import liquibase.database.sql.RawSqlStatement;
 import liquibase.database.sql.UpdateStatement;
@@ -9,11 +17,7 @@ import liquibase.database.sql.visitor.SqlVisitor;
 import liquibase.exception.JDBCException;
 import liquibase.exception.LockException;
 import liquibase.log.LogFactory;
-
-import java.net.InetAddress;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.util.*;
+import liquibase.util.NetUtil;
 
 public class LockHandler {
 
@@ -37,13 +41,13 @@ public class LockHandler {
 
     public boolean acquireLock() throws LockException {
         try {
-            database.checkDatabaseChangeLogLockTable();
+            this.database.checkDatabaseChangeLogLockTable();
 
             Boolean locked;
             try {
-                locked = (Boolean) database.getJdbcTemplate().queryForObject(database.getSelectChangeLogLockSQL(), Boolean.class, new ArrayList<SqlVisitor>());
+                locked = (Boolean) this.database.getJdbcTemplate().queryForObject(this.database.getSelectChangeLogLockSQL(), Boolean.class, new ArrayList<SqlVisitor>());
             } catch (JDBCException e) {
-                if (!database.getJdbcTemplate().executesStatements()) {
+                if (!this.database.getJdbcTemplate().executesStatements()) {
                     //expected
                     locked = false;
                 } else {
@@ -53,26 +57,26 @@ public class LockHandler {
             if (locked) {
                 return false;
             } else {
-                UpdateStatement updateStatement = new UpdateStatement(database.getDefaultSchemaName(), database.getDatabaseChangeLogLockTableName());
+                UpdateStatement updateStatement = new UpdateStatement(this.database.getDefaultSchemaName(), this.database.getDatabaseChangeLogLockTableName());
                 updateStatement.addNewColumnValue("LOCKED", true);
                 updateStatement.addNewColumnValue("LOCKGRANTED", new Timestamp(new java.util.Date().getTime()));
                 InetAddress localHost = NetUtil.getLocalHost();
                 updateStatement.addNewColumnValue("LOCKEDBY", localHost.getHostName() + " (" + localHost.getHostAddress() + ")");
                 updateStatement.setWhereClause("ID  = 1");
 
-                database.getJdbcTemplate().comment("Lock Database");
-                int rowsUpdated = database.getJdbcTemplate().update(updateStatement, new ArrayList<SqlVisitor>());
+                this.database.getJdbcTemplate().comment("Lock Database");
+                int rowsUpdated = this.database.getJdbcTemplate().update(updateStatement, new ArrayList<SqlVisitor>());
                 if (rowsUpdated != 1) {
-                    if (!database.getJdbcTemplate().executesStatements()) {
+                    if (!this.database.getJdbcTemplate().executesStatements()) {
                         //expected
                     } else {
                         throw new LockException("Did not update change log lock correctly");
                     }
                 }
-                database.commit();
+                this.database.commit();
                 LogFactory.getLogger().info("Successfully acquired change log lock");
 
-                hasChangeLogLock = true;
+                this.hasChangeLogLock = true;
                 return true;
             }
         } catch (Exception e) {
@@ -83,22 +87,22 @@ public class LockHandler {
 
     public void releaseLock() throws LockException {
         try {
-            if (database.doesChangeLogLockTableExist() || !database.getJdbcTemplate().executesStatements()) {
-                UpdateStatement releaseStatement = new UpdateStatement(database.getDefaultSchemaName(), database.getDatabaseChangeLogLockTableName());
+            if (this.database.doesChangeLogLockTableExist() || !this.database.getJdbcTemplate().executesStatements()) {
+                UpdateStatement releaseStatement = new UpdateStatement(this.database.getDefaultSchemaName(), this.database.getDatabaseChangeLogLockTableName());
                 releaseStatement.addNewColumnValue("LOCKED", false);
                 releaseStatement.addNewColumnValue("LOCKGRANTED", null);
                 releaseStatement.addNewColumnValue("LOCKEDBY", null);
                 releaseStatement.setWhereClause(" ID = 1");
 
-                database.getJdbcTemplate().comment("Release Database Lock");
-                int updatedRows = database.getJdbcTemplate().update(releaseStatement, new ArrayList<SqlVisitor>());
+                this.database.getJdbcTemplate().comment("Release Database Lock");
+                int updatedRows = this.database.getJdbcTemplate().update(releaseStatement, new ArrayList<SqlVisitor>());
                 if (updatedRows != 1) {
-                    if (database.getJdbcTemplate().executesStatements()) {
+                    if (this.database.getJdbcTemplate().executesStatements()) {
                         throw new LockException("Did not update change log lock correctly.\n\n" + releaseStatement + " updated " + updatedRows + " instead of the expected 1 row.");
                     }
                 }
-                database.commit();
-                hasChangeLogLock = false;
+                this.database.commit();
+                this.hasChangeLogLock = false;
 
                 instances.remove(this.database);
 
@@ -111,23 +115,25 @@ public class LockHandler {
 
     public DatabaseChangeLogLock[] listLocks() throws LockException {
         try {
-            if (!database.doesChangeLogLockTableExist()) {
+            if (!this.database.doesChangeLogLockTableExist()) {
                 return new DatabaseChangeLogLock[0];
             }
 
             List<DatabaseChangeLogLock> allLocks = new ArrayList<DatabaseChangeLogLock>();
-            RawSqlStatement sqlStatement = new RawSqlStatement((("SELECT ID, LOCKED, LOCKGRANTED, LOCKEDBY FROM " + database.escapeTableName(database.getDefaultSchemaName(), database.getDatabaseChangeLogLockTableName()))));
-            List<Map> rows = database.getJdbcTemplate().queryForList(sqlStatement, new ArrayList<SqlVisitor>());
+            RawSqlStatement sqlStatement = new RawSqlStatement((("SELECT ID, LOCKED, LOCKGRANTED, LOCKEDBY FROM " + this.database.escapeTableName(this.database.getDefaultSchemaName(), this.database.getDatabaseChangeLogLockTableName()))));
+            List<Map> rows = this.database.getJdbcTemplate().queryForList(sqlStatement, new ArrayList<SqlVisitor>());
             for (Map columnMap : rows) {
-                Object lockedValue = columnMap.get("LOCKED");
+                Object lockedValue = this.getFromMap(columnMap, "LOCKED");
                 Boolean locked;
                 if (lockedValue instanceof Number) {
                     locked = ((Number) lockedValue).intValue() == 1;
                 } else {
                     locked = (Boolean) lockedValue;
                 }
-                if (locked != null && locked) {
-                    allLocks.add(new DatabaseChangeLogLock(((Number) columnMap.get("ID")).intValue(), (Date) columnMap.get("LOCKGRANTED"), (String) columnMap.get("LOCKEDBY")));
+                if ((locked != null) && locked) {
+                    allLocks.add(new DatabaseChangeLogLock(((Number) this.getFromMap(columnMap, "ID")).intValue(),
+                            (Date) this.getFromMap(columnMap, "LOCKGRANTED"), (String) this.getFromMap(columnMap,
+                                    "LOCKEDBY")));
                 }
             }
             return allLocks.toArray(new DatabaseChangeLogLock[allLocks.size()]);
@@ -136,18 +142,26 @@ public class LockHandler {
         }
     }
 
+    private Object getFromMap(Map columnMap, String columnName) {
+        Object value = columnMap.get(columnName);
+        if (value == null) {
+            return columnMap.get(columnName.toLowerCase());
+        }
+        return value;
+    }
+
     public void waitForLock() throws LockException {
-        if (hasChangeLogLock) {
+        if (this.hasChangeLogLock) {
             return;
         }
 
         try {
-            database.checkDatabaseChangeLogLockTable();
+            this.database.checkDatabaseChangeLogLockTable();
 
             boolean locked = false;
-            long timeToGiveUp = new Date().getTime() + changeLogLockWaitTime;
-            while (!locked && new Date().getTime() < timeToGiveUp) {
-                locked = acquireLock();
+            long timeToGiveUp = new Date().getTime() + this.changeLogLockWaitTime;
+            while (!locked && (new Date().getTime() < timeToGiveUp)) {
+                locked = this.acquireLock();
                 if (!locked) {
                     System.out.println("Waiting for changelog lock....");
                     try {
@@ -159,7 +173,7 @@ public class LockHandler {
             }
 
             if (!locked) {
-                DatabaseChangeLogLock[] locks = listLocks();
+                DatabaseChangeLogLock[] locks = this.listLocks();
                 String lockedBy;
                 if (locks.length > 0) {
                     DatabaseChangeLogLock lock = locks[0];
@@ -170,7 +184,7 @@ public class LockHandler {
                 throw new LockException("Could not acquire change log lock.  Currently locked by " + lockedBy);
             }
         } catch (JDBCException e) {
-            if (!database.getJdbcTemplate().executesStatements()) {
+            if (!this.database.getJdbcTemplate().executesStatements()) {
                 ; //nothing to do
             } else {
                 throw new LockException(e);
@@ -182,15 +196,15 @@ public class LockHandler {
      * Releases whatever locks are on the database change log table
      */
     public void forceReleaseLock() throws LockException, JDBCException {
-        database.checkDatabaseChangeLogLockTable();
+        this.database.checkDatabaseChangeLogLockTable();
 
-        releaseLock();
+        this.releaseLock();
     }
 
     /**
      * Clears information the lock handler knows about the tables.  Should only be called by LiquiBase internal calls
      */
     public void reset() {
-        hasChangeLogLock = false;
+        this.hasChangeLogLock = false;
     }
 }
