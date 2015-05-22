@@ -65,10 +65,7 @@ public class SetNullableStatement implements SqlStatement {
         } else if (database instanceof DerbyDatabase || database instanceof CacheDatabase) {
             return "ALTER TABLE " + database.escapeTableName(getSchemaName(), getTableName()) + " ALTER COLUMN  " + database.escapeColumnName(getSchemaName(), getTableName(), getColumnName()) + nullableString;
         } else if (database instanceof HsqlDatabase) {
-//            if (getColumnDataType() == null) {
-//                throw new StatementNotSupportedOnDatabaseException("Database requires columnDataType parameter", this, database);
-//            }
-            return "ALTER TABLE " + database.escapeTableName(getSchemaName(), getTableName()) + " ALTER COLUMN  " + database.escapeColumnName(getSchemaName(), getTableName(), getColumnName()) + " " + getColumnDataType() + nullableString;
+            return "ALTER TABLE " + database.escapeTableName(getSchemaName(), getTableName()) + " ALTER COLUMN  " + database.escapeColumnName(getSchemaName(), getTableName(), getColumnName()) + " SET " + nullableString;
         } else if (database instanceof FirebirdDatabase) {
             throw new StatementNotSupportedOnDatabaseException(this, database);
         } else if (database instanceof MaxDBDatabase) {
